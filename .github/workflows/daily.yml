@@ -48,11 +48,12 @@ jobs:
           AI_THOUGHT=""
           if [ -n "$GEMINI_API_KEY" ]; then
             echo "🤖 Fetching AI thought of the day..."
-            PROMPT="Give me one short, unique motivational thought or fun programming fact in 1-2 sentences. Be creative and different each time. No markdown formatting."
-            RESPONSE=$(curl -s --max-time 10 \
+            PROMPT='Give me one short, unique motivational thought or fun programming fact in 1-2 sentences. Be creative and different each time. No markdown formatting.'
+            JSON_BODY=$(printf '{"contents":[{"parts":[{"text":"%s"}]}]}' "$PROMPT")
+            RESPONSE=$(curl -s --max-time 15 \
               "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}" \
               -H 'Content-Type: application/json' \
-              -d "{\"contents\":[{\"parts\":[{\"text\":\"$PROMPT\"}]}]}" 2>/dev/null || echo "")
+              -d "$JSON_BODY" 2>/dev/null || echo "")
 
             if [ -n "$RESPONSE" ]; then
               AI_THOUGHT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null | tr -d '\n' || echo "")
@@ -237,4 +238,5 @@ jobs:
           git add -A
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "$FULL_MSG"
+          git pull --rebase origin main
           git push
