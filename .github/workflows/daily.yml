@@ -1,0 +1,30 @@
+name: Twice Daily Commit
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # 9:00 AM IST
+    - cron: '20 13 * * *'  # 6:50 PM IST
+  workflow_dispatch:
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Make Update
+        run: |
+          echo "Update at $(date)" >> activity.log
+
+      - name: Commit & Push
+        run: |
+          git config --global user.name "Vishesh Sanghvi"
+          git config --global user.email "112061811+visheshsanghvi112@users.noreply.github.com"
+          git add activity.log
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Automated activity update - $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          git push
