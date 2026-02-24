@@ -16,15 +16,224 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Make Update
+      # ── Randomized delay (0–5 min) so commits don't look robotic ──
+      - name: Random Delay
         run: |
-          echo "Update at $(date)" >> activity.log
+          DELAY=$((RANDOM % 300))
+          echo "⏳ Sleeping for $DELAY seconds to randomize commit time..."
+          sleep $DELAY
 
+      # ── Generate daily content ──
+      - name: Generate Activity
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -e
+          TODAY=$(date -u '+%Y-%m-%d')
+          NOW=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          IST_TIME=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %I:%M %p IST')
+
+          # ──────────────────────────────────────
+          # 1. Pick a random quote
+          # ──────────────────────────────────────
+          TOTAL_QUOTES=$(wc -l < data/quotes.txt)
+          LINE=$((RANDOM % TOTAL_QUOTES + 1))
+          QUOTE=$(sed -n "${LINE}p" data/quotes.txt)
+          echo "📜 Quote: $QUOTE"
+
+          # ──────────────────────────────────────
+          # 2. Gemini AI thought of the day (optional)
+          # ──────────────────────────────────────
+          AI_THOUGHT=""
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "🤖 Fetching AI thought of the day..."
+            PROMPT="Give me one short, unique motivational thought or fun programming fact in 1-2 sentences. Be creative and different each time. No markdown formatting."
+            RESPONSE=$(curl -s --max-time 10 \
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}" \
+              -H 'Content-Type: application/json' \
+              -d "{\"contents\":[{\"parts\":[{\"text\":\"$PROMPT\"}]}]}" 2>/dev/null || echo "")
+
+            if [ -n "$RESPONSE" ]; then
+              AI_THOUGHT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null | tr -d '\n' || echo "")
+            fi
+
+            if [ -n "$AI_THOUGHT" ]; then
+              echo "🤖 AI says: $AI_THOUGHT"
+            else
+              echo "⚠️ AI thought unavailable, using quote only."
+            fi
+          fi
+
+          # ──────────────────────────────────────
+          # 3. Update activity.log
+          # ──────────────────────────────────────
+          echo "" >> activity.log
+          echo "───────────────────────────────────────" >> activity.log
+          echo "📅 $IST_TIME" >> activity.log
+          echo "💬 $QUOTE" >> activity.log
+          if [ -n "$AI_THOUGHT" ]; then
+            echo "🤖 $AI_THOUGHT" >> activity.log
+          fi
+
+          # ──────────────────────────────────────
+          # 4. Update streak tracker
+          # ──────────────────────────────────────
+          STREAK_FILE="data/streak.json"
+          LAST_DATE=$(jq -r '.last_commit_date' "$STREAK_FILE")
+          CURRENT_STREAK=$(jq -r '.current_streak' "$STREAK_FILE")
+          LONGEST_STREAK=$(jq -r '.longest_streak' "$STREAK_FILE")
+          TOTAL_COMMITS=$(jq -r '.total_commits' "$STREAK_FILE")
+          STARTED_ON=$(jq -r '.started_on' "$STREAK_FILE")
+
+          TOTAL_COMMITS=$((TOTAL_COMMITS + 1))
+
+          if [ "$LAST_DATE" = "$TODAY" ]; then
+            # Same day — streak stays, just increment commits
+            :
+          elif [ -n "$LAST_DATE" ]; then
+            YESTERDAY=$(date -u -d "$LAST_DATE + 1 day" '+%Y-%m-%d' 2>/dev/null || echo "")
+            if [ "$YESTERDAY" = "$TODAY" ]; then
+              CURRENT_STREAK=$((CURRENT_STREAK + 1))
+            else
+              CURRENT_STREAK=1
+            fi
+          else
+            CURRENT_STREAK=1
+          fi
+
+          if [ "$CURRENT_STREAK" -gt "$LONGEST_STREAK" ]; then
+            LONGEST_STREAK=$CURRENT_STREAK
+          fi
+
+          jq -n \
+            --argjson cs "$CURRENT_STREAK" \
+            --argjson ls "$LONGEST_STREAK" \
+            --argjson tc "$TOTAL_COMMITS" \
+            --arg lcd "$TODAY" \
+            --arg so "$STARTED_ON" \
+            '{current_streak: $cs, longest_streak: $ls, total_commits: $tc, last_commit_date: $lcd, started_on: $so}' \
+            > "$STREAK_FILE"
+
+          echo "🔥 Streak: $CURRENT_STREAK | Longest: $LONGEST_STREAK | Total: $TOTAL_COMMITS"
+
+          # ──────────────────────────────────────
+          # 5. Rotate random file updates
+          # ──────────────────────────────────────
+          WEEKDAY=$(date -u '+%A')
+          echo "{ \"last_updated\": \"$NOW\", \"day\": \"$WEEKDAY\", \"quote\": \"$QUOTE\" }" > data/today.json
+
+          # ──────────────────────────────────────
+          # 6. Update README with live stats
+          # ──────────────────────────────────────
+          cat > README.md << 'HEADER'
+          # 📊 Daily Activity
+
+          > Keeping the GitHub contribution graph green, one commit at a time.
+
+          [![Twice Daily Commit](https://github.com/visheshsanghvi112/Daily-activity/actions/workflows/daily.yml/badge.svg)](https://github.com/visheshsanghvi112/Daily-activity/actions/workflows/daily.yml)
+
+          ---
+
+          HEADER
+          # Remove leading spaces from heredoc
+          sed -i 's/^          //' README.md
+
+          cat >> README.md << EOF
+          ## 📈 Live Stats
+
+          | Metric | Value |
+          |--------|-------|
+          | 🔥 Current Streak | **${CURRENT_STREAK} days** |
+          | 🏆 Longest Streak | **${LONGEST_STREAK} days** |
+          | 📝 Total Commits | **${TOTAL_COMMITS}** |
+          | 🕐 Last Update | ${IST_TIME} |
+          | 📅 Started On | ${STARTED_ON} |
+
+          > 💬 *"${QUOTE}"*
+
+          EOF
+          sed -i 's/^          //' README.md
+
+          cat >> README.md << 'FOOTER'
+          ---
+
+          ## 🤖 How It Works
+
+          A scheduled GitHub Actions workflow runs **twice daily** and:
+
+          1. ⏳ Waits a random 0–5 min delay (so commits look natural)
+          2. 📜 Picks a random motivational quote from a curated list
+          3. 🤖 Optionally fetches an AI-generated thought via Gemini API
+          4. 📝 Appends the content to `activity.log`
+          5. 📊 Updates streak & stats tracking
+          6. 📋 Refreshes this README with live stats
+          7. 🚀 Commits with a randomized message & pushes
+
+          | ⏰ Schedule     | 🇮🇳 IST     | 🌐 UTC     |
+          |----------------|------------|------------|
+          | Morning commit | 9:00 AM    | 3:30 AM    |
+          | Evening commit | 6:50 PM    | 1:20 PM    |
+
+          ## 📂 Project Structure
+
+          ```
+          Daily-activity/
+          ├── .github/workflows/
+          │   └── daily.yml        # The magic ✨
+          ├── data/
+          │   ├── quotes.txt       # 50 curated motivational quotes
+          │   ├── streak.json      # Streak & stats tracker
+          │   └── today.json       # Today's snapshot
+          ├── activity.log         # Auto-updated timestamp + quote log
+          ├── LICENSE              # MIT License
+          └── README.md            # This file (auto-updated!)
+          ```
+
+          ## 🚀 Run It Manually
+
+          1. Head to the [**Actions**](https://github.com/visheshsanghvi112/Daily-activity/actions) tab
+          2. Select **Twice Daily Commit**
+          3. Click **Run workflow** → **Run**
+
+          ## 📜 License
+
+          Licensed under the [MIT License](LICENSE).
+
+          ---
+
+          <p align="center">
+            Made with 💚 by <a href="https://visheshsanghvi.me"><b>Vishesh Sanghvi</b></a>
+          </p>
+          FOOTER
+          sed -i 's/^          //' README.md
+
+      # ── Commit with a random message ──
       - name: Commit & Push
         run: |
+          MESSAGES=(
+            "📝 Daily activity update"
+            "🔄 Routine check-in"
+            "✨ Another day, another commit"
+            "🚀 Keeping the streak alive"
+            "💪 Consistency is key"
+            "🌱 Growing one commit at a time"
+            "⚡ Automated daily push"
+            "🎯 Staying on track"
+            "🔥 The grind never stops"
+            "🧠 Learning every day"
+            "📊 Daily progress logged"
+            "🌟 Small steps, big results"
+            "💡 Ideas into action"
+            "🛠️ Building habits"
+            "🏗️ One brick at a time"
+          )
+          MSG="${MESSAGES[$((RANDOM % ${#MESSAGES[@]}))]}"
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+          FULL_MSG="$MSG — $TIMESTAMP"
+
           git config --global user.name "Vishesh Sanghvi"
           git config --global user.email "112061811+visheshsanghvi112@users.noreply.github.com"
-          git add activity.log
+          git add -A
           git diff --cached --quiet && echo "No changes to commit" && exit 0
-          git commit -m "Automated activity update - $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          git commit -m "$FULL_MSG"
           git push
