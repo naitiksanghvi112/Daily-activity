@@ -9,6 +9,7 @@ on:
 jobs:
   auto-commit:
     runs-on: ubuntu-latest
+    environment: GEMINI_API_KEY
     permissions:
       contents: write
 
