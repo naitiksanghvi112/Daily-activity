@@ -1,41 +1,86 @@
+<div align="center">
+
 # 📊 Daily Activity
 
-> Keeping the GitHub contribution graph green, one commit at a time.
+### *Keeping the GitHub contribution graph green, one commit at a time.*
 
 [![Twice Daily Commit](https://github.com/visheshsanghvi112/Daily-activity/actions/workflows/daily.yml/badge.svg)](https://github.com/visheshsanghvi112/Daily-activity/actions/workflows/daily.yml)
+[![GitHub last commit](https://img.shields.io/github/last-commit/visheshsanghvi112/Daily-activity?color=green)](https://github.com/visheshsanghvi112/Daily-activity/commits/main)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
 
 ---
 
 ## 📈 Live Stats
 
-| Metric | Value |
-|--------|-------|
-| 🔥 Current Streak | **1 days** |
-| 🏆 Longest Streak | **1 days** |
-| 📝 Total Commits | **2** |
-| 🕐 Last Update | 2026-02-24 03:39 PM IST |
-| 📅 Started On | 2026-02-24 |
+<div align="center">
 
-> 💬 *"Any fool can write code that a computer can understand. Good programmers write code that humans can understand. – Martin Fowler"*
+| Metric | Value |
+|:------:|:-----:|
+| 🔥 Current Streak | **1 day(s)** |
+| 🏆 Longest Streak | **1 day(s)** |
+| 📝 Total Auto-Commits | **3** |
+| 🕐 Last Update | `2026-02-24 03:49 PM IST` |
+| 📅 Tracking Since | `2026-02-24` |
+
+
+</div>
+
+> 💬 *"Code is like humor. When you have to explain it, it's bad. – Cory House"*
 
 ---
 
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| 🕐 **Twice Daily Commits** | Automated commits at 9:00 AM & 6:50 PM IST |
+| ⏳ **Randomized Timing** | 0–5 min random delay so commits look natural |
+| 📜 **Motivational Quotes** | 50+ curated quotes — a new one every commit |
+| 🤖 **AI-Powered Thoughts** | Gemini API generates a unique thought each time |
+| 🔥 **Streak Tracking** | Tracks current streak, longest streak & total commits |
+| 📊 **Live README** | This README auto-updates with fresh stats every run |
+| 🎲 **Varied Commit Messages** | 15 different random commit messages |
+| 📁 **Multi-File Updates** | Rotates updates across multiple files |
+
 ## 🤖 How It Works
 
-A scheduled GitHub Actions workflow runs **twice daily** and:
+```
+┌─────────────────────────────────────────────────┐
+│              GitHub Actions (Cron)              │
+│          9:00 AM IST  &  6:50 PM IST           │
+└──────────────────────┬──────────────────────────┘
+             │
+┌────────────▼────────────┐
+│  ⏳ Random Delay 0-5m   │
+└────────────┬────────────┘
+             │
+     ┌─────────────────▼─────────────────┐
+     │  📜 Pick Random Quote (50+ pool)  │
+     │  🤖 Fetch AI Thought (Gemini)     │
+     └─────────────────┬─────────────────┘
+             │
+  ┌────────────────────▼────────────────────┐
+  │  📝 Update activity.log                 │
+  │  📊 Update streak.json                  │
+  │  📋 Regenerate README.md with stats     │
+  │  📁 Update today.json                   │
+  └────────────────────┬────────────────────┘
+             │
+         ┌─────────────▼─────────────┐
+         │  🎲 Random Commit Message  │
+         │  🚀 Commit & Push          │
+         └───────────────────────────┘
+```
 
-1. ⏳ Waits a random 0–5 min delay (so commits look natural)
-2. 📜 Picks a random motivational quote from a curated list
-3. 🤖 Optionally fetches an AI-generated thought via Gemini API
-4. 📝 Appends the content to `activity.log`
-5. 📊 Updates streak & stats tracking
-6. 📋 Refreshes this README with live stats
-7. 🚀 Commits with a randomized message & pushes
+## 🛠️ Tech Stack
 
-| ⏰ Schedule     | 🇮🇳 IST     | 🌐 UTC     |
-|----------------|------------|------------|
-| Morning commit | 9:00 AM    | 3:30 AM    |
-| Evening commit | 6:50 PM    | 1:20 PM    |
+- **GitHub Actions** — CI/CD automation engine
+- **Bash Scripting** — lightweight, zero dependencies
+- **Google Gemini API** — AI-generated daily thoughts
+- **jq** — JSON processing for streak tracking
+- **Cron** — UTC-based scheduling
 
 ## 📂 Project Structure
 
@@ -44,12 +89,12 @@ Daily-activity/
 ├── .github/workflows/
 │   └── daily.yml        # The magic ✨
 ├── data/
-│   ├── quotes.txt       # 50 curated motivational quotes
+│   ├── quotes.txt       # 50+ curated motivational quotes
 │   ├── streak.json      # Streak & stats tracker
-│   └── today.json       # Today's snapshot
+│   └── today.json       # Today's rotating snapshot
 ├── activity.log         # Auto-updated timestamp + quote log
 ├── LICENSE              # MIT License
-└── README.md            # This file (auto-updated!)
+└── README.md            # This file (auto-updated with live stats!)
 ```
 
 ## 🚀 Run It Manually
