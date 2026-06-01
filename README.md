@@ -18,16 +18,16 @@
 
 | Metric | Value |
 |:------:|:-----:|
-| 🔥 Current Streak | **97 day(s)** |
-| 🏆 Longest Streak | **97 day(s)** |
-| 📝 Total Auto-Commits | **196** |
-| 🕐 Last Update | `2026-05-31 08:28 PM IST` |
+| 🔥 Current Streak | **98 day(s)** |
+| 🏆 Longest Streak | **98 day(s)** |
+| 📝 Total Auto-Commits | **197** |
+| 🕐 Last Update | `2026-06-01 02:33 PM IST` |
 | 📅 Tracking Since | `2026-02-24` |
 
 
 </div>
 
-> 💬 *"Great things never come from comfort zones."*
+> 💬 *"It's going to be hard, but hard does not mean impossible."*
 
 ---
 
